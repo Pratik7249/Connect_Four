@@ -2,7 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import Leaderboard from './components/Leaderboard.jsx';
 import Board from './components/Board.jsx';
 
-const WS_URL = 'ws://localhost:4000/ws';
+const WS_URL =
+  window.location.hostname === 'localhost'
+    ? 'ws://localhost:4000/ws'
+    : 'wss://your-backend-domain.com/ws';
+
+
 
 export default function App() {
   const [username, setUsername] = useState('');
