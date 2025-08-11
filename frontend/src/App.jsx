@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Leaderboard from './components/Leaderboard.jsx';
 import Board from './components/Board.jsx';
-const socket = new WebSocket(import.meta.env.VITE_WS_URL);
 
-
-const WS_URL = process.env.NODE_ENV === 'production'
-  ? 'wss://connect4-backend.onrender.com/ws'
-  : 'ws://localhost:4000/ws';
+const WS_URL = import.meta.env.VITE_WS_URL;
 
 
 
