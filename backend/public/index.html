@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>4-in-a-Row — Test UI</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #controls { margin-bottom: 12px; }
+    #board { display: grid; grid-template-rows: repeat(6, 60px); grid-gap: 6px; width: 7*66px; }
+    .row { display: grid; grid-template-columns: repeat(7, 66px); gap: 6px; }
+    .cell {
+      width: 66px; height: 60px; background: #1976d2; border-radius: 6px;
+      display:flex; align-items:center; justify-content:center;
+      cursor: pointer;
+    }
+    .disc { width: 52px; height: 52px; border-radius: 50%; background: transparent; }
+    .disc.p1 { background: red; }
+    .disc.p2 { background: yellow; }
+    .empty { background: rgba(255,255,255,0.8); border-radius:50%; width:52px; height:52px; }
+    .meta { margin-top: 12px; }
+    #log { white-space: pre-wrap; background:#f5f5f5; padding:8px; height:120px; overflow:auto; }
+    button { padding:6px 10px; }
+  </style>
+</head>
+<body>
+  <h2>4-in-a-Row — Test UI</h2>
+
+  <div id="controls">
+    <input id="username" placeholder="username" />
+    <button id="joinBtn">Join Queue</button>
+    <button id="leaveBtn" disabled>Leave</button>
+    <span id="status"></span>
+  </div>
+
+  <div id="meta" class="meta">
+    <div>Player: <b id="me"></b> | Opponent: <b id="opponent"></b> | Turn: <b id="turn"></b></div>
+    <div>GameId: <span id="gameId"></span></div>
+  </div>
+
+  <div style="margin-top:12px;">
+    <div id="boardContainer"></div>
+  </div>
+
+  <div class="meta">
+    <div>Last Move: <span id="lastMove">-</span></div>
+    <div id="result" style="font-weight:600; margin-top:8px;"></div>
+  </div>
+
+  <h4>Event Log</h4>
+  <div id="log"></div>
+
+  <script>
+    const joinBtn = document.getElementById('joinBtn');
+    const leaveBtn = document.getElementById('leaveBtn');
+    const usernameInput = document.getElementById('username');
+    const statusEl = document.getElementById('status');
+    const meEl = document.getElementById('me');
+    const oppEl = document.getElementById('opponent');
+    const turnEl = document.getElementById('turn');
+    const gameIdEl = document.getElementById('gameId');
+    const logEl = document.getElementById('log');
+    const lastMoveEl = document.getElementById('lastMove');
+    const resultEl = document.getElementById('result');
+    const boardContainer = document.getElementById('boardContainer');
+
+    let ws = null;
+    let myPlayerNumber = null;
+    let currentGameId = null;
+    let board = null; // 2D array rows x cols
+
+    function createBoardUI(b) {
+      board = b;
+      boardContainer.innerHTML = '';
+      // create rows top-to-bottom as in server (0 is top)
+      for (let r = 0; r < b.length; r++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'row';
+        for (let c = 0; c < b[r].length; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.col = c;
+          cell.dataset.row = r;
+          const discWrap = document.createElement('div');
+          if (b[r][c] === 0) {
+            discWrap.className = 'empty';
+          } else if (b[r][c] === 1) {
+            discWrap.className = 'disc p1';
+          } else if (b[r][c] === 2) {
+            discWrap.className = 'disc p2';
+          } else {
+            discWrap.className = 'empty';
+          }
+          cell.appendChild(discWrap);
+          // Click on column -> send move (only if it's our turn)
+          cell.onclick = () => onColumnClick(c);
+          rowDiv.appendChild(cell);
+        }
+        boardContainer.appendChild(rowDiv);
+      }
+    }
+
+    function onColumnClick(col) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) { appendLog('Not connected'); return; }
+      if (!currentGameId) { appendLog('No active game'); return; }
+      if (!myPlayerNumber) { appendLog('No player number assigned yet'); return; }
+      if (Number(turnEl.textContent) !== myPlayerNumber) { appendLog('Not your turn'); return; }
+
+      ws.send(JSON.stringify({ type: 'move', gameId: currentGameId, col }));
+      appendLog(`Sent move col ${col}`);
+    }
+
+    function appendLog(msg) {
+      const time = new Date().toLocaleTimeString();
+      logEl.textContent += `[${time}] ${msg}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    joinBtn.onclick = () => {
+      const username = usernameInput.value.trim();
+      if (!username) return alert('Enter username');
+      if (ws && ws.readyState === WebSocket.OPEN) return alert('Already connected');
+
+      ws = new WebSocket(`ws://${location.hostname}:4000/ws`);
+      ws.onopen = () => {
+        appendLog('WS connected');
+        ws.send(JSON.stringify({ type: 'join', username }));
+        statusEl.textContent = 'Joined queue...';
+        joinBtn.disabled = true;
+        leaveBtn.disabled = false;
+      };
+      ws.onmessage = (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch (e) { appendLog('invalid msg'); return; }
+        appendLog('<< ' + JSON.stringify(msg));
+        handleServerMessage(msg, username);
+      };
+      ws.onclose = () => {
+        appendLog('WS closed');
+        statusEl.textContent = 'Disconnected';
+        joinBtn.disabled = false;
+        leaveBtn.disabled = true;
+      };
+      ws.onerror = (e) => appendLog('WS error');
+    };
+
+    leaveBtn.onclick = () => {
+      if (ws) ws.close();
+      ws = null;
+      joinBtn.disabled = false;
+      leaveBtn.disabled = true;
+      resetUI();
+    };
+
+    function resetUI() {
+      myPlayerNumber = null;
+      currentGameId = null;
+      board = null;
+      meEl.textContent = '';
+      oppEl.textContent = '';
+      turnEl.textContent = '';
+      gameIdEl.textContent = '';
+      lastMoveEl.textContent = '-';
+      resultEl.textContent = '';
+      boardContainer.innerHTML = '';
+      statusEl.textContent = '';
+    }
+
+    function handleServerMessage(msg, username) {
+      if (msg.type === 'start') {
+        // server: playerNumber, opponent, board, gameId (in our server we use gameId)
+        currentGameId = msg.gameId;
+        myPlayerNumber = msg.playerNumber;
+        meEl.textContent = username + ' (you #' + myPlayerNumber + ')';
+        oppEl.textContent = msg.opponent;
+        turnEl.textContent = msg.turn;
+        gameIdEl.textContent = currentGameId;
+        createBoardUI(msg.board);
+        statusEl.textContent = 'In game';
+        appendLog('Game started. You are player #' + myPlayerNumber);
+      } else if (msg.type === 'update') {
+        // update board and turn and lastMove
+        if (msg.board) createBoardUI(msg.board);
+        if (msg.turn !== undefined) turnEl.textContent = msg.turn;
+        if (msg.lastMove) lastMoveEl.textContent = `player ${msg.lastMove.player} -> col ${msg.lastMove.col}, row ${msg.lastMove.row}`;
+      } else if (msg.type === 'end') {
+        resultEl.textContent = 'Result: ' + (msg.winner === 'draw' ? 'Draw' : (msg.winner + ' wins'));
+        statusEl.textContent = 'Game finished';
+        appendLog('Game ended: ' + msg.winner);
+      } else if (msg.type === 'error') {
+        appendLog('Server error: ' + msg.message);
+      } else {
+        appendLog('Unknown msg: ' + JSON.stringify(msg));
+      }
+    }
+  </script>
+</body>
+</html>
