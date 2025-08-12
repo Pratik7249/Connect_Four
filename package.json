@@ -1,5 +1,8 @@
 {
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.1"
   }
 }
