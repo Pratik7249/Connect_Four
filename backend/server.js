@@ -76,6 +76,13 @@ server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
+wss.on('connection', (ws, req) => {
+  console.log('✅ WS client connected from', req.socket.remoteAddress, 'headers:', req.headers);
+  ws.send(JSON.stringify({ type: 'info', message: 'connected' }));
+
+  ws.on('close', () => console.log('client disconnected'));
+});
+
 
 const games = new Map();
 const waiting = [];

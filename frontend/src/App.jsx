@@ -3,7 +3,7 @@ import Leaderboard from './components/Leaderboard.jsx';
 import Board from './components/Board.jsx';
 
 const WS_URL = import.meta.env.VITE_WS_URL ||
-  (import.meta.env.MODE === 'development' ? 'ws://localhost:4000/ws' : 'wss://connect-backend-production-8fb3.up.railway.app/ws');
+  (import.meta.env.MODE === 'development' ? 'ws://localhost:4000/ws' : 'wss://connect-backend-production-8fb3.up.railway.app/');
 
 
 
