@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const WebSocket = require('ws');
 const { Pool } = require('pg');
 require('dotenv').config();
+const http = require('http');
 
 const {
   emptyBoard, drop, isBoardFull, checkWinner, botChooseColumn
@@ -64,8 +65,17 @@ app.get('/', (req, res) => {
 });
 
 // ---- WebSocket Setup ----
-const server = app.listen(PORT, () => console.log(`Server running on ${PORT}`));
-const wss = new WebSocket.Server({ server });
+
+
+const server = http.createServer(app);
+
+const wss = new WebSocket.Server({ server, path: '/ws' });
+
+
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
 
 const games = new Map();
 const waiting = [];
