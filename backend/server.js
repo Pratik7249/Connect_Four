@@ -65,7 +65,7 @@ app.get('/', (req, res) => {
 
 // ---- WebSocket Setup ----
 const server = app.listen(PORT, () => console.log(`Server running on ${PORT}`));
-const wss = new WebSocket.Server({ server, path: '/ws' });
+const wss = new WebSocket.Server({ server });
 
 const games = new Map();
 const waiting = [];
