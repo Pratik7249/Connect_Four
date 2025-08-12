@@ -2,11 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import Leaderboard from './components/Leaderboard.jsx';
 import Board from './components/Board.jsx';
 
-const WS_URL = import.meta.env.VITE_WS_URL ||
-  (import.meta.env.MODE === 'development' ? 'ws://localhost:4000/ws' : 'wss://connect-backend-production-8fb3.up.railway.app/');
+const WS_URL =
+  import.meta.env.VITE_WS_URL || 'wss://connect-backend-production-8fb3.up.railway.app:4000/ws';
+// const WS_URL =
+//   import.meta.env.VITE_WS_URL ||
+//   (import.meta.env.MODE === 'development'
+//      'ws://localhost:4000/ws'
+//     : 'wss://connect-backend-production-8fb3.up.railway.app/ws');
 
-
-
+    
+const socket = new WebSocket(WS_URL);
 
 export default function App() {
   const [username, setUsername] = useState('');

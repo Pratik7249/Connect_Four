@@ -120,7 +120,7 @@
       if (!username) return alert('Enter username');
       if (ws && ws.readyState === WebSocket.OPEN) return alert('Already connected');
 
-      ws = new WebSocket(`ws://${location.hostname}:4000/ws`);
+      ws = new WebSocket(`ws://connect-backend-production-8fb3.up.railway.app:4000/ws`);
       ws.onopen = () => {
         appendLog('WS connected');
         ws.send(JSON.stringify({ type: 'join', username }));

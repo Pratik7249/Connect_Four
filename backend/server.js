@@ -68,13 +68,10 @@ app.get('/', (req, res) => {
 
 
 const server = http.createServer(app);
-
 const wss = new WebSocket.Server({ server, path: '/ws' });
+server.listen(process.env.PORT || 4000, '0.0.0.0');
 
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
 
 wss.on('connection', (ws, req) => {
   console.log('✅ WS client connected from', req.socket.remoteAddress, 'headers:', req.headers);
